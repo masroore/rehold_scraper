@@ -1,5 +1,6 @@
 from selectolax.parser import HTMLParser
-from .urls import _BASE_URL
+
+from .database import City, Street
 from scraper_kit.src import html_utils
 
 
@@ -9,9 +10,34 @@ def parce_cities_index(content: str) -> list[str]:
     urls = []
     if section:
         for anchor in section.css("a"):
-            urls.append(_BASE_URL + anchor.attributes["href"])
+            name = anchor.text(strip=True)
+            href = anchor.attributes["href"].strip("/")
+            # print(name + " >> " + anchor.attributes["href"])
+            city, created = City.get_or_create(slug=href)
+            city.name = name
+            city.save()
+            urls.append(href)
 
     return sorted(set(urls))
+
+
+def parse_city_streets(content: str, city: City) -> list[str]:
+    dom = HTMLParser(content)
+    urls = []
+    for anchor in dom.css('dom.css("#main > .b-area-code table tr a")'):
+        name = anchor.text(strip=True)
+        href = anchor.attributes["href"].strip("/")
+        Street(name=name, slug=href, city=city).save()
+        urls.append(href)
+
+    return sorted(set(urls))
+
+
+def street_next_page(dom: HTMLParser) -> str | None:
+    anchors = dom.css("#main .prev-next > a")
+    if any(anchors):
+        return anchors[-1].attributes["href"]
+    return None
 
 
 def peroxide(

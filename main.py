@@ -9,7 +9,7 @@ from scraper_kit.src.sessions import SessionManager
 from scraper_kit.src.timer import Timer
 from scraper_kit.src.web.task import TaskResult, TaskRequest
 from scraper_kit.src.web.worker import AsyncWebWorker, SyncWebWorker
-from src import urls, parser, fetcher
+from src import urls, parser, fetcher, database
 
 CITIES: list[str] = []
 
@@ -57,6 +57,8 @@ def process_download(response: TaskResult, _: AsyncWebWorker):
 if __name__ == "__main__":
     configure_event_loop()
     options.load_options()
+
+    database.init_db()
 
     opt = StashOptions()
     opt.cache_min_size = SIZE_KB * 1
