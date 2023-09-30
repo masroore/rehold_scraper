@@ -24,10 +24,10 @@ def parce_cities_index(content: str) -> list[str]:
 def parse_city_streets(content: str, city: City) -> list[str]:
     dom = HTMLParser(content)
     slugs = []
-    for anchor in dom.css('dom.css("#main > .b-area-code table tr a")'):
+    for anchor in dom.css("#main > .b-area-code table tr a"):
         name = anchor.text(strip=True)
         href = anchor.attributes["href"].strip("/")
-        street = Street.get_or_create(name=name, slug=href, city=city)
+        street, _ = Street.get_or_create(name=name, slug=href, city=city)
         street.save()
         slugs.append(href)
 
