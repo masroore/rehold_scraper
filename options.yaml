@@ -1,0 +1,3 @@
+concurrency: 4
+timeout: 45
+rotating_proxy: "http://qxerhmfs-rotate:odvgwubmbjti@p.webshare.io:80/"
