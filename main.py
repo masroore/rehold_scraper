@@ -60,7 +60,6 @@ def process_download(response: TaskResult, _: AsyncWebWorker):
 
 
 def parse_city_page(content: str | bytes, slug: str):
-    print(slug)
     city = City.get_or_none(slug=slug)
     streets = parser.parse_city_streets(content=content, city=city)
 
