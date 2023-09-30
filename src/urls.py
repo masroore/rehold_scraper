@@ -14,3 +14,7 @@ def append_alpha_num(base_url: str, include_num: bool) -> list[str]:
 
 def city_indices() -> list[str]:
     return append_alpha_num(_BASE_URL + "/NJ+", False)
+
+
+def city_url(path: str) -> str:
+    return "/".join([_BASE_URL, path])

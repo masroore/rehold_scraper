@@ -19,8 +19,8 @@ class Street(BaseModel):
     city = ForeignKeyField(City, backref="streets")
 
 
-def city_add(name: str, slug: str) -> City:
-    city = City.get_or_create(name=name, slug=slug)
+def city_get(name: str, slug: str) -> City:
+    city = City.get_or_none(slug=slug)
     return city
 
 

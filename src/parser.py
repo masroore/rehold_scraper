@@ -23,14 +23,15 @@ def parce_cities_index(content: str) -> list[str]:
 
 def parse_city_streets(content: str, city: City) -> list[str]:
     dom = HTMLParser(content)
-    urls = []
+    slugs = []
     for anchor in dom.css('dom.css("#main > .b-area-code table tr a")'):
         name = anchor.text(strip=True)
         href = anchor.attributes["href"].strip("/")
-        Street(name=name, slug=href, city=city).save()
-        urls.append(href)
+        street = Street.get_or_create(name=name, slug=href, city=city)
+        street.save()
+        slugs.append(href)
 
-    return sorted(set(urls))
+    return sorted(set(slugs))
 
 
 def street_next_page(dom: HTMLParser) -> str | None:

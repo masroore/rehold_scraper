@@ -10,6 +10,7 @@ from scraper_kit.src.timer import Timer
 from scraper_kit.src.web.task import TaskResult, TaskRequest
 from scraper_kit.src.web.worker import AsyncWebWorker, SyncWebWorker
 from src import urls, parser, fetcher, database
+from src.database import City
 
 CITIES: list[str] = []
 
@@ -24,7 +25,7 @@ def process_download(response: TaskResult, _: AsyncWebWorker):
     global task_queue, cache, timer
     # print(response.url)
     content_len = 0
-    tag = response.tag
+    tag: str = response.tag
 
     # print(response.content)
     if response.is_error:
@@ -38,7 +39,11 @@ def process_download(response: TaskResult, _: AsyncWebWorker):
                 html=response.content, retain_scripts=False, minify=True
             )
             cache.write(tag, content=bleached)
-            parse_index_page(content=response.content)
+            slug = tag.split("@")[1]
+            if tag.startswith("ix@"):
+                parse_index_page(content=response.content)
+            elif tag.startswith("cy@"):
+                parse_city_page(content=response.content, slug=slug)
 
     if response.proxy_server:
         purl = URL(response.proxy_server)
@@ -52,6 +57,12 @@ def process_download(response: TaskResult, _: AsyncWebWorker):
         f"Tm: {elapsed:>5} | Ht: {response.status_code} | Dl: {utils.human_size(content_len, suppress_zero=True):>8} | {tag}",
         timer=timer,
     )
+
+
+def parse_city_page(content: str | bytes, slug: str):
+    print(slug)
+    city = City.get_or_none(slug=slug)
+    streets = parser.parse_city_streets(content=content, city=city)
 
 
 if __name__ == "__main__":
@@ -69,13 +80,6 @@ if __name__ == "__main__":
     proxies = RotatingProxyPool(
         rotating_proxy=options.get_options().rotating_proxy, concurrency=concurrency
     )
-    worker = SyncWebWorker(
-        proxy_man=proxies,
-        session_man=sessions,
-        timer=Timer(),
-        timeout=options.get_options().timeout,
-    )
-
     worker = AsyncWebWorker(
         concurrency=concurrency,
         proxy_man=proxies,
@@ -104,7 +108,7 @@ if __name__ == "__main__":
     timer = Timer().start()
 
     for u in urls.city_indices():
-        tag = "cy@" + u
+        tag = "ix@" + u
         if cache.exists(tag):
             content = cache.read(tag)
             parse_index_page(content=content)
@@ -122,4 +126,26 @@ if __name__ == "__main__":
 
     loader.run()
     CITIES = sorted(set(CITIES))
-    print(CITIES)
+
+    for c_slug in CITIES:
+        slugs = urls.append_alpha_num(c_slug + "+", True)
+        for slug in slugs:
+            url = urls.city_url(slug)
+            tag = "cy@" + c_slug
+
+            if cache.exists(tag):
+                content = cache.read(tag)
+                parse_city_page(content=content, slug=c_slug)
+            else:
+                loader.add_task(
+                    TaskRequest(
+                        url=url,
+                        session_disabled=True,
+                        session_id="",
+                        tag=tag,
+                        proxy_url=proxies.pick(),
+                        proxy_disabled=True,
+                    )
+                )
+
+    loader.run()
